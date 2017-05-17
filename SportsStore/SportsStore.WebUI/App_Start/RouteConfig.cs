@@ -13,6 +13,12 @@ namespace SportsStore.WebUI
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
+            routes.MapRoute(//składanie strony
+                name: null,
+                url: "Strona{page}",
+                defaults: new { Controller = "Product", action = "List" }
+                );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",
