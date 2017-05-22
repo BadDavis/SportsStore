@@ -6,6 +6,7 @@ using Moq;
 using SportsStore.Domain.Abstract;
 using SportsStore.WebUI.Controllers;
 using SportsStore.WebUI.Models;
+using System.Web.Mvc;
 
 namespace SportsStore.UnitTests
 {
@@ -126,7 +127,7 @@ namespace SportsStore.UnitTests
 
             Cart cart = new Cart();
 
-            CartController target = new CartController(mock.Object);
+            CartController target = new CartController(mock.Object, null);
 
             //act
             target.AddToCart(cart, 1, null);
@@ -148,7 +149,7 @@ namespace SportsStore.UnitTests
 
             Cart cart = new Cart();
 
-            CartController target = new CartController(mock.Object);
+            CartController target = new CartController(mock.Object, null);
 
             //act
             CartIndexViewModel result = (CartIndexViewModel)target.Index(cart, "myUrl").ViewData.Model;
@@ -156,7 +157,78 @@ namespace SportsStore.UnitTests
             //assert
             Assert.AreSame(result.Cart, cart);
             Assert.AreEqual(result.ReturnUrl, "myUrl");
+        }
 
+        [TestMethod]
+        public void Cannot_Checkout_Empty_Cart()
+        {
+            //arrange
+            Mock<IOrderProcessor> mock = new Mock<IOrderProcessor>();
+
+            Cart cart = new Cart();
+
+            ShippingDetails details = new ShippingDetails();
+
+            CartController target = new CartController(null, mock.Object);
+
+            //act
+            ViewResult result = target.Checkout(cart, details);
+
+            //asser czy zamowienie przekazano do procesora
+            mock.Verify(m => m.ProcessOrder(It.IsAny<Cart>(), It.IsAny<ShippingDetails>()), Times.Never());
+
+            //assert czy metoda zwraca domyslny widok
+            Assert.AreEqual("", result.ViewName);
+
+            //assert czy przekazujemy prawidlowy model do widoku
+            Assert.AreEqual(false, result.ViewData.ModelState.IsValid);
+        }
+
+        [TestMethod]
+        public void Cannot_Invalid_ShippingDetails()
+        {
+            //arrange
+            Mock<IOrderProcessor> mock = new Mock<IOrderProcessor>();
+
+            Cart cart = new Cart();
+            cart.AddItem(new Product(), 1);
+
+            CartController target = new CartController(null, mock.Object);
+
+            target.ModelState.AddModelError("error", "error");
+
+            //act
+            ViewResult result = target.Checkout(cart, new ShippingDetails());
+
+            //assert czy czy zamowienie przekazano do procesora
+            Assert.AreEqual("", result.ViewName);
+
+            //assert czy przekazujemy nieprawidlowy model do widoku
+            Assert.AreEqual(false, result.ViewData.ModelState.IsValid);
+        }
+
+        [TestMethod]
+        public void Can_Checkout_And_Submit_Order()
+        {
+            //arrange
+            Mock<IOrderProcessor> mock = new Mock<IOrderProcessor>();
+
+            Cart cart = new Cart();
+            cart.AddItem(new Product(),1);
+
+            CartController target = new CartController(null, mock.Object);
+
+            //act
+            ViewResult result = target.Checkout(cart, new ShippingDetails());
+
+            //assert sprawdzamy czy zamowienie nie zostalo przekazane do procesora
+            mock.Verify(m => m.ProcessOrder(It.IsAny<Cart>(), It.IsAny<ShippingDetails>()), Times.Once());
+
+            //assert czy metoda zwraca widok complete
+            Assert.AreEqual("Completed", result.ViewName);
+
+            //assert czy przekazujemy prawidlowy model do widoku
+            Assert.AreEqual(true, target.ViewData.ModelState.IsValid);
         }
     }
 }
