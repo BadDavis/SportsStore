@@ -21,6 +21,17 @@ namespace SportsStore.Domain
             }
         }
 
+        public Product DeleteProduct(int productId)
+        {
+            Product dbEntry = _context.Products.Find(productId);
+            if (dbEntry!=null)
+            {
+                _context.Products.Remove(dbEntry);
+                _context.SaveChanges();
+            }
+            return dbEntry;
+        }
+
         public void SaveProduct(Product product)
         {
             if (product.ProductId == 0)

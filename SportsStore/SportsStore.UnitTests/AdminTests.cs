@@ -121,7 +121,29 @@ namespace SportsStore.UnitTests
 
             //assert jaki typ zwraca metida
             Assert.IsInstanceOfType(result, typeof(ViewResult));
+        }
 
+        [TestMethod]
+        public void Can_Delete_Valid_Products()
+        {
+            //arrange
+            Product product = new Product { ProductId = 2, Name = "Test" };
+
+            Mock<IProductRepository> mock = new Mock<IProductRepository>();
+            mock.Setup(m => m.Products).Returns(new Product[]
+            {
+                new Product {ProductId=1,Name="P1" },
+                product,
+                new Product {ProductId=3,Name = "P3" }
+            });
+
+            AdminController target = new AdminController(mock.Object);
+
+            //act
+            target.Delete(product.ProductId);
+
+            //assert
+            mock.Verify(m => m.DeleteProduct(product.ProductId));
         }
     }
 }
